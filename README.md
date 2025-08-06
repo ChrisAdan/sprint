@@ -78,7 +78,11 @@ bungie_analytics/
 
 ---
 
-## 🧱 Data Warehouse Design (dbt)
+## 🧱 Data Warehouse Design
+
+![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white&style=flat-square) |
+![DuckDB](https://img.shields.io/badge/DuckDB-%231C2D3F?logo=DuckDB&logoColor=white&style=flat-square) |
+![dbt](https://img.shields.io/badge/dbt-%23FF694B?logo=dbt&logoColor=white&style=flat-square)
 
 ### STG Layer
 
