@@ -60,8 +60,9 @@ Close encounters are derived from heartbeat data in dbt using spatial proximity 
 ```bash
 bungie_analytics/
 ├── data/ # Output folder for synthetic data
-├── generate_sample_data.py # Python script to generate JSON/CSV payloads
-├── ingest_to_duckdb.py # Load raw data into DuckDB
+├── scripts/
+│ ├── generate_sample_data.py # Python script to generate JSON/CSV payloads
+│ ├── ingest_to_duckdb.py # Load raw data into DuckDB
 ├── dbt_project/ # dbt models and transformations
 │ ├── models/
 │ │ ├── stg_*.sql
@@ -71,7 +72,8 @@ bungie_analytics/
 │ │ └── ...
 ├── queries/ # SQL files answering the 7 questions
 ├── streamlit_app.py # Optional dashboard
-└── README.md
+├── README.md
+└── LICENSE
 ```
 
 ---
