@@ -1,0 +1,16 @@
+{
+  "session_id": "70a1d2f0-dd2b-4941-bfaa-226a3074af95",
+  "start_time": "2025-08-07T11:18:04.482537+00:00",
+  "end_time": "2025-08-07T11:48:04.482537+00:00",
+  "heartbeats": [
+    {
+      "playerId": "abc123",
+      "sessionId": "70a1d2f0-dd2b-4941-bfaa-226a3074af95",
+      "teamId": "redTeam",
+      "timestamp": "2025-08-07T11:18:04.482537+00:00",
+      "positionX": 1.1,
+      "positionY": 2.2,
+      "positionZ": 3.3
+    }
+  ]
+}

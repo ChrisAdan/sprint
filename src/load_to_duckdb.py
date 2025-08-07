@@ -1,9 +1,9 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import duckdb
 
-from src.utils import SESSION_PATH
+from utils import SESSION_PATH
 
 DB_PATH = Path("data/synthetic.duckdb")
 
@@ -16,26 +16,36 @@ def connect_to_duckdb():
     return duckdb.connect(DB_PATH)
 
 
-def write_session_to_disk(session_id, session_start, session_end, heartbeat_data, duck_conn):
+def write_session_to_disk(session_id, session_start, session_end, heartbeat_data, duck_conn, session_dir: Path):
     """
     Writes a full session JSON payload to disk and inserts into DuckDB raw.event_session table.
+
+    Args:
+        session_id (str): Unique session UUID.
+        session_start (datetime): When session started.
+        session_end (datetime): When session ended.
+        heartbeat_data (list[dict]): Heartbeat payloads.
+        duck_conn (duckdb.DuckDBPyConnection): Active DB connection.
+        session_dir (Path): Directory where session JSON files are written.
     """
     json_obj = {
-        "session_id": session_id,
-        "start_time": session_start.isoformat(),
-        "end_time": session_end.isoformat(),
+        "sessionId": session_id,
+        "startTime": session_start.isoformat(),
+        "endTime": session_end.isoformat(),
         "heartbeats": heartbeat_data
     }
 
     json_str = json.dumps(json_obj, indent=2)
-    created_at = datetime.now(datetime.timezone.utc).isoformat()
-    json_path = SESSION_PATH / f"{session_id}_{session_end.isoformat()}.json"
+    created_at = datetime.now(timezone.utc).isoformat()
+
+    json_path = session_dir / f"{session_id}_{session_end.isoformat()}.json"
     json_path.write_text(json_str)
 
     duck_conn.execute(
         "INSERT INTO raw.event_session (recordId, rawResponse, createdAt) VALUES (?, ?, ?)",
         (session_id, json_str, created_at)
     )
+
 
 
 def stage_session(summary_df, duck_conn):
