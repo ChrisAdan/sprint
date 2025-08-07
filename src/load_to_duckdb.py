@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 import duckdb
 
-from utils import SESSION_PATH
+from src.utils import SESSION_PATH
 
 DB_PATH = Path("data/synthetic.duckdb")
 
