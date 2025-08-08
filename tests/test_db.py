@@ -8,13 +8,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+# Debug sys.path to ensure PYTHONPATH is correct (esp. for direnv)
 import sys
 import pprint
-
 print("PYTHONPATH from runtime sys.path:")
 pprint.pprint(sys.path)
 
-
+# ✅ Imports from src/
 from load_to_duckdb import connect_to_duckdb, write_session_to_disk, stage_session
 import utils as utils
 
@@ -39,10 +39,9 @@ def duck_conn(session_path):
     Depends on session_path fixture to ensure session path setup.
     """
     conn = connect_to_duckdb()
-    # Clean tables before each module run
+    # Clean and recreate test tables
     conn.execute("DROP TABLE IF EXISTS raw.event_session")
     conn.execute("DROP TABLE IF EXISTS stage.fact_session")
-    # Recreate tables according to the schema in connect_to_duckdb()
     conn.execute("CREATE SCHEMA IF NOT EXISTS raw")
     conn.execute("CREATE SCHEMA IF NOT EXISTS stage")
     conn.execute("""
@@ -92,8 +91,45 @@ def test_write_session_to_disk_and_duckdb(duck_conn, session_path):
         }
     ]
 
-    # Pass ses
+    # ✅ Write to disk and DuckDB
+    write_session_to_disk(
+        session_id=session_id,
+        session_start=session_start,
+        session_end=session_end,
+        heartbeat_data=heartbeat_data,
+        duck_conn=duck_conn,
+        session_dir=session_path
+    )
 
+    # ✅ Check JSON file creation
+    files = list(session_path.glob(f"{session_id}_*.json"))
+    assert len(files) == 1, "Expected exactly one JSON file for the session"
+    json_file = files[0]
+    assert json_file.exists()
+
+    with open(json_file, "r") as f:
+        payload = json.load(f)
+
+    assert "sessionId" in payload
+    assert payload["sessionId"] == session_id
+    assert "heartbeats" in payload
+    hb = payload["heartbeats"][0]
+    assert hb["playerId"] == "abc123"
+    assert hb["sessionId"] == session_id
+    assert hb["teamId"] == "redTeam"
+    assert hb["positionX"] == 1.1
+    assert hb["positionY"] == 2.2
+    assert hb["positionZ"] == 3.3
+
+    # ✅ Verify DuckDB insertion
+    row = duck_conn.execute(
+        "SELECT * FROM raw.event_session WHERE recordId = ?", (session_id,)
+    ).fetchone()
+
+    assert row is not None
+    assert row[0] == session_id
+    stored_json = json.loads(row[1])
+    assert stored_json["sessionId"] == session_id
 
 
 def test_stage_session(duck_conn):
@@ -122,7 +158,6 @@ def test_stage_session(duck_conn):
     assert len(rows) == 1
     row = rows[0]
 
-    # order of columns: playerId, sessionId, eventDateTime, country, eventLengthSeconds, kills, deaths
     assert row[0] == "player001"
     assert row[1] == "sess001"
     assert row[3] == "US"
