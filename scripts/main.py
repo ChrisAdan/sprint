@@ -1,5 +1,5 @@
 from src.utils import generate_player_ids, model_sign_ons, assign_countries
-from src.generate_sample_data import generate_sessions
+from sprint.src.session_generator import generate_sessions
 from src.load_to_duckdb import connect_to_duckdb
 
 def main():

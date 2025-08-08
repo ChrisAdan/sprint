@@ -1,44 +1,75 @@
 from datetime import timedelta
 import numpy as np
+from pathlib import Path
 
-from src.utils import HEARTBEAT_INTERVAL
+from src.utils import HEARTBEAT_INTERVAL, GRID_BOUNDS
+from src.movement.step import lorentzian, bezier, lissajous, perlin
 
 
-def simulate_heartbeats(player_ids, session_id, team_ids, session_start, speed_map, durations):
+STEP_FUNCTIONS = {
+    "lorentzian": lorentzian.step_xyz,
+    "bezier": bezier.step_xyz,
+    "lissajous": lissajous.step_xyz,
+    "perlin": perlin.step_xyz
+}
+
+
+def clamp_to_bounds(x, y, z):
+    lower, upper = GRID_BOUNDS
+    x = max(min(x, upper), lower)
+    y = max(min(y, upper), lower)
+    z = max(min(z, upper), lower)
+    return x, y, z
+
+
+def simulate_heartbeats(player_ids, session_id, team_ids, session_start, speed_map, durations, behavior_map):
     """
-    Simulates heartbeat logs per player using Lorentz-style motion.
+    Simulates heartbeats for all players using assigned movement types.
+
+    Returns a list of heartbeat dicts with XYZ positions every 30s.
     """
     heartbeats = []
+    positions = {}
 
+    # Assign unique starting positions
+    attempts = 0
+    while len(positions) < len(player_ids):
+        x, y, z = np.random.uniform(*GRID_BOUNDS, size=3)
+        collision = any(np.linalg.norm(np.array([x, y, z]) - np.array(pos)) < 1
+                        for pos in positions.values())
+        if not collision:
+            pid = player_ids[len(positions)]
+            positions[pid] = (x, y, z)
+        else:
+            attempts += 1
+            if attempts > 1000:
+                raise ValueError("Unable to place players without collisions.")
+
+    # Simulate each player's movement
     for pid in player_ids:
         duration = durations[pid]
         speed = speed_map[pid]
-        num_beats = duration // HEARTBEAT_INTERVAL
+        team = team_ids[pid]
+        behavior = behavior_map[pid]
+        step_fn = STEP_FUNCTIONS[behavior]
 
-        # Random initial position
-        x, y, z = np.random.uniform(-100, 100, size=3)
+        x, y, z = positions[pid]
+        num_beats = duration // HEARTBEAT_INTERVAL
 
         for i in range(num_beats):
             ts = session_start + timedelta(seconds=i * HEARTBEAT_INTERVAL)
 
-            # Simple Lorentz-like motion along x-axis
-            dx = speed / (1 + x**2)
-            x += dx
-            y += np.sin(i / 10.0) * speed * 0.1
-            z += np.cos(i / 10.0) * speed * 0.1
-
-            # Clip to grid
-            x = max(min(x, 100), -100)
-            y = max(min(y, 100), -100)
-            z = max(min(z, 100), -100)
+            x, y, z = step_fn(x, y, z, speed, i)
+            x, y, z = clamp_to_bounds(x, y, z)
 
             heartbeats.append({
                 "timestamp": ts.isoformat(),
-                "player_id": pid,
-                "session_id": session_id,
-                "x": round(x, 3),
-                "y": round(y, 3),
-                "z": round(z, 3)
+                "playerId": pid,
+                "sessionId": session_id,
+                "teamId": team,
+                "positionX": round(x, 3),
+                "positionY": round(y, 3),
+                "positionZ": round(z, 3)
             })
 
     return heartbeats
