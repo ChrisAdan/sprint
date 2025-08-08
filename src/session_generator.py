@@ -1,4 +1,3 @@
-import json
 import uuid
 import random
 from pathlib import Path
@@ -10,7 +9,7 @@ import pandas as pd
 
 from src.load_to_duckdb import write_session_to_disk, stage_session
 
-from src.utils import SESSION_PATH, HEARTBEAT_INTERVAL, SESSION_MAX_DURATION_SECONDS, \
+from src.utils import SESSION_MAX_DURATION_SECONDS, \
     MIN_TEAMS, MAX_TEAMS, MIN_PLAYERS_PER_TEAM, MAX_PLAYERS_PER_TEAM
 
 

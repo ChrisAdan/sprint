@@ -1,13 +1,27 @@
 from src.utils import generate_player_ids, model_sign_ons, assign_countries
-from src.generate_sample_data import generate_sessions
+from src.session_generator import generate_sessions
 from src.load_to_duckdb import connect_to_duckdb
 
+
 def main():
+    """
+    Main entrypoint for the simulation pipeline.
+    - Connects to DuckDB
+    - Prompts user for number of players
+    - Generates player IDs and sign-on events
+    - Assigns countries
+    - Runs session simulation and inserts heartbeat + summary data into DuckDB
+    """
     print("📦 Connecting to DuckDB...")
     conn = connect_to_duckdb()
 
     print("👥 Generating player IDs...")
-    n_players = int(input("Enter number of players to simulate: ").strip())
+    try:
+        n_players = int(input("Enter number of players to simulate: ").strip())
+    except ValueError:
+        print("❌ Invalid number entered.")
+        return
+
     player_ids = generate_player_ids(n_players=n_players)
 
     print("📅 Modeling player sign-ons...")
@@ -17,7 +31,8 @@ def main():
     print("🎮 Generating sessions and inserting into DuckDB...")
     generate_sessions(signins_df, country_map, conn)
 
-    print("✅ Done!")
+    print("✅ Done! All sessions generated and stored.")
+
 
 if __name__ == "__main__":
     main()
