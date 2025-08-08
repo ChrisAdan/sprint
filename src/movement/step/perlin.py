@@ -1,6 +1,6 @@
-from noise import pnoise1
+from noise import pnoise1 # type: ignore
 
-def step_xyz(x, y, z, speed, t):
+def step(x, y, z, speed, t):
     """
     Compute the next position using Perlin noise for smooth pseudo-random movement.
 

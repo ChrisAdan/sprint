@@ -1,6 +1,6 @@
 import numpy as np
 
-def step_xyz(x, y, z, speed, t):
+def step(x, y, z, speed, t):
     """
     Compute the next position using Lissajous curve dynamics.
 

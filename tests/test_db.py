@@ -16,7 +16,7 @@ pprint.pprint(sys.path)
 
 # ✅ Imports from src/
 from load_to_duckdb import connect_to_duckdb, write_session_to_disk, stage_session
-import utils as utils
+import utils
 
 
 @pytest.fixture(scope="session")

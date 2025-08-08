@@ -2,15 +2,15 @@ from datetime import timedelta
 import numpy as np
 from pathlib import Path
 
-from src.utils import HEARTBEAT_INTERVAL, GRID_BOUNDS
-from src.movement.step import lorentzian, bezier, lissajous, perlin
+from utils import HEARTBEAT_INTERVAL, GRID_BOUNDS
+from movement.step import lorentzian, bezier, lissajous, perlin
 
 
 STEP_FUNCTIONS = {
-    "lorentzian": lorentzian.step_xyz,
-    "bezier": bezier.step_xyz,
-    "lissajous": lissajous.step_xyz,
-    "perlin": perlin.step_xyz
+    "lorentzian": lorentzian.step,
+    "bezier": bezier.step,
+    "lissajous": lissajous.step,
+    "perlin": perlin.step
 }
 
 
