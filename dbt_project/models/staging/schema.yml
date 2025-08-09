@@ -1,0 +1,118 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw ingested data from synthetic game simulation"
+    tables:
+      - name: event_session
+        description: "Session-level data including heartbeat_data JSON and raw JSON response"
+        columns:
+          - name: recordId
+            description: "Unique session identifier"
+            tests:
+              - not_null
+              - unique
+          - name: rawResponse
+            description: "Raw JSON containing full player session heartbeat and other info"
+            tests:
+              - not_null
+          - name: createdAt
+            description: "Timestamp when the session record was created"
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "< now()"
+
+      - name: event_transactions
+        description: "Transaction logs with purchases and events"
+        columns:
+          - name: transactionId
+            description: "Unique transaction identifier"
+            tests:
+              - not_null
+              - unique
+          - name: playerId
+            description: "Player identifier who performed the transaction"
+            tests:
+              - not_null
+          - name: eventDateTime
+            description: "Timestamp of the transaction event"
+            tests:
+              - not_null
+          - name: purchaseItem
+            description: "SKU of the purchased product"
+            tests:
+              - not_null
+          - name: purchasePrice
+            description: "Purchase price in USD"
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+          - name: purchaseQuantity
+            description: "Quantity of the purchased product"
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "> 0"
+          - name: currency
+            description: "Currency code, e.g. USD"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ["USD"]
+          - name: isRecurring
+            description: "Indicates if purchase is recurring"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: [true, false]
+          - name: cycle
+            description: "Subscription cycle (e.g., monthly, yearly)"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ["M", "Y"]
+          - name: transactionType
+            description: "Type of transaction (e.g., BattlePass, Emote, Skin)"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ["BattlePass", "Emote", "Skin"]
+
+models:
+  - name: stg_heartbeats
+    description: "Flattened heartbeat data extracted from event_session. One row per heartbeat."
+    columns:
+      - name: session_id
+        description: "Session this heartbeat belongs to"
+        tests:
+          - not_null
+      - name: player_id
+        description: "Player emitting this heartbeat"
+        tests:
+          - not_null
+      - name: heartbeat_ts
+        description: "Timestamp of the heartbeat event"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= '2025-01-01'"
+      - name: position_x
+        description: "X coordinate"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "BETWEEN -100 AND 100"
+      - name: position_y
+        description: "Y coordinate"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "BETWEEN -100 AND 100"
+      - name: position_z
+        description: "Z coordinate"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "BETWEEN -100 AND 100"
