@@ -1,17 +1,15 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 import numpy as np
 
 from utils import HEARTBEAT_INTERVAL, GRID_BOUNDS
 from movement.step import lorentzian, bezier, lissajous, perlin
 
-
 STEP_FUNCTIONS = {
     "lorentzian": lorentzian.step,
     "bezier": bezier.step,
     "lissajous": lissajous.step,
-    "perlin": perlin.step
+    "perlin": perlin.step,
 }
-
 
 def clamp_to_bounds(x, y, z):
     lower, upper = GRID_BOUNDS
@@ -20,35 +18,57 @@ def clamp_to_bounds(x, y, z):
     z = max(min(z, upper), lower)
     return x, y, z
 
-
-def simulate_heartbeats(player_ids, session_id, team_ids, session_start, speed_map, durations, behavior_map):
+def simulate_heartbeats(
+    player_ids: list[str],
+    session_id: str,
+    team_ids: dict[str, str],
+    session_start: "datetime.datetime",
+    speed_map: dict[str, int],
+    durations: dict[str, int],
+    behavior_map: dict[str, str],
+) -> list[dict]:
     """
-    Simulates heartbeats for all players using assigned movement types.
+    Simulate heartbeat position logs for all players over their session durations.
 
-    Returns a list of heartbeat dicts with XYZ positions every 30s.
+    Each heartbeat is emitted every HEARTBEAT_INTERVAL seconds,
+    including player id, team id, position (X,Y,Z), timestamp, and session id.
+
+    Args:
+        player_ids: List of player UUID strings.
+        session_id: UUID string for the session.
+        team_ids: Mapping of playerId -> teamId.
+        session_start: datetime object marking session start.
+        speed_map: playerId -> speed int (units per step).
+        durations: playerId -> session length in seconds.
+        behavior_map: playerId -> movement type string (must be a key in STEP_FUNCTIONS).
+
+    Returns:
+        List of heartbeat dicts.
     """
+
     heartbeats = []
     positions = {}
 
-    # Assign unique starting positions
+    # Assign unique random starting positions avoiding collisions (min 1 unit apart)
     attempts = 0
     while len(positions) < len(player_ids):
-        x, y, z = np.random.uniform(*GRID_BOUNDS, size=3)
-        collision = any(np.linalg.norm(np.array([x, y, z]) - np.array(pos)) < 1
-                        for pos in positions.values())
+        candidate_pos = np.random.uniform(*GRID_BOUNDS, size=3)
+        collision = any(
+            np.linalg.norm(candidate_pos - np.array(pos)) < 1 for pos in positions.values()
+        )
         if not collision:
             pid = player_ids[len(positions)]
-            positions[pid] = (x, y, z)
+            positions[pid] = tuple(candidate_pos)
         else:
             attempts += 1
             if attempts > 1000:
-                raise ValueError("Unable to place players without collisions.")
+                raise RuntimeError("Failed to assign unique start positions without collision.")
 
-    # Simulate each player's movement
+    # Generate heartbeats per player
     for pid in player_ids:
         duration = durations[pid]
         speed = speed_map[pid]
-        team = team_ids[pid]
+        team_id = team_ids[pid]
         behavior = behavior_map[pid]
         step_fn = STEP_FUNCTIONS[behavior]
 
@@ -65,10 +85,10 @@ def simulate_heartbeats(player_ids, session_id, team_ids, session_start, speed_m
                 "timestamp": ts.isoformat(),
                 "playerId": pid,
                 "sessionId": session_id,
-                "teamId": team,
+                "teamId": team_id,
                 "positionX": round(x, 3),
                 "positionY": round(y, 3),
-                "positionZ": round(z, 3)
+                "positionZ": round(z, 3),
             })
 
     return heartbeats

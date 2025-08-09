@@ -9,37 +9,53 @@ seeds:
         tests:
           - unique
           - not_null
+
       - name: productSku
         description: "SKU in the format SKU-####"
         tests:
           - not_null
+
+      - name: productName
+        description: "Human-readable product name"
+        tests:
+          - not_null
+
       - name: tier
         description: "Product tier"
         tests:
           - accepted_values:
               values: ["Premium", "Standard"]
+
       - name: purchasePrice
         description: "Purchase price in USD"
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: "purchasePrice > 0"
+
       - name: transactionType
         description: "Type of transaction for the product"
         tests:
           - accepted_values:
               values: ["BattlePass", "Emote", "Skin"]
+
       - name: isRecurring
         description: "Boolean flag for recurring products"
-      - name: cycle
-        description: "Billing cycle for recurring products (M/Y)"
         tests:
           - accepted_values:
-              values: ["", "M", "Y"]
+              values: [true, false]
+
+      - name: cycle
+        description: "Billing cycle for recurring products (M/Y), null if non-recurring"
+        tests:
+          - accepted_values:
+              values: ["M", "Y", null]
+
       - name: createdAt
         description: "Record creation timestamp"
         tests:
           - not_null
+
       - name: lastModifiedAt
         description: "Last modification timestamp"
         tests:

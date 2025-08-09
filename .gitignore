@@ -209,6 +209,7 @@ __marimo__/
 
 # DuckDB
 *.duckdb
+*.duckdb.wal
 
 # sessions
 data/*/*.json

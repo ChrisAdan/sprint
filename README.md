@@ -58,19 +58,20 @@ Close encounters are derived from heartbeat data in dbt using spatial proximity 
 ## 🗂️ Folder Structure
 
 ```bash
-sprint/
-├── data/                      # Output folder for synthetic JSON/CSV/Parquet data
+sprint/                         # Root project directory
 │
-├── scripts/                   # CLI entry points for the pipeline
-│   ├── generate_sample_data.py # Orchestrates session, heartbeat, and summary generation
-│   ├── ingest_to_duckdb.py     # Loads raw JSON/CSV data into DuckDB
+├── data/                       # Output folder for synthetic JSON/CSV/Parquet data
 │
-├── src/                       # Core simulation logic
+├── scripts/                    # CLI entry points for the pipeline
+│   ├── generate_sample_data.py  # Orchestrates session, heartbeat, and summary generation
+│   ├── ingest_to_duckdb.py      # Loads raw JSON/CSV data into DuckDB
+│
+├── src/                        # Core simulation logic
 │   ├── __init__.py
-│   ├── session_generator.py   # Creates player sessions and metadata
-│   ├── heartbeat_generator.py # Simulates player movement heartbeats in 3D space
-│   ├── summarizer.py          # Aggregates kills, deaths, session stats
-│   ├── movement/              # Movement function implementations
+│   ├── session_generator.py     # Creates player sessions and metadata
+│   ├── heartbeat_generator.py   # Simulates player movement heartbeats in 3D space
+│   ├── summarizer.py            # Aggregates kills, deaths, session stats
+│   ├── movement/                # Movement function implementations
 │   │   ├── __init__.py
 │   │   ├── step/
 │   │   │   ├── lorentzian.py
@@ -79,27 +80,30 @@ sprint/
 │   │   │   ├── perlin.py
 │   │   │   └── ...
 │
-├── dbt_project/               # dbt transformations
-│   ├── seeds/                 # Static reference data (e.g., movement type lookup)
-│   │   ├── movement_types.csv
-│   │   └── ...
+├── dbt_project/                 # dbt transformations
+│   ├── seeds/                   # Static reference data
+│   │   ├── dim_products.csv      # Example: product lookup table
+│   │   └── ...                   # Additional seed CSVs
+│   │
 │   ├── models/
-│   │   ├── staging/           # stg_* models to clean/normalize raw data
-│   │   │   ├── stg_sessions.sql
-│   │   │   ├── stg_heartbeats.sql
+│   │   ├── staging/              # Clean and prepare raw data
+│   │   │   ├── stg_heartbeats.sql # Parse heartbeat_data JSON into tabular format
+│   │   │   ├── stg_sessions.sql   # Clean session metadata
+│   │   │   ├── stg_transactions.sql # Clean transaction data
 │   │   │   └── ...
-│   │   ├── marts/             # Final analytics tables
-│   │   │   ├── fact_sessions.sql
-│   │   │   ├── fact_encounters.sql
-│   │   │   ├── dim_players.sql
+│   │
+│   │   ├── marts/                # Final analytics tables
+│   │   │   ├── fact_heartbeats.sql # (Optional) Refined heartbeat facts
 │   │   │   └── ...
-│   ├── dbt_project.yml
+│   │
+│   ├── dbt_project.yml           # dbt project configuration
 │
-├── queries/                   # Standalone SQL scripts for the 7 business questions
+├── queries/                      # Standalone SQL scripts for the 7 business questions
 │
-├── streamlit_app.py           # Optional interactive dashboard
+├── streamlit_app.py               # Optional interactive dashboard
 ├── README.md
 └── LICENSE
+
 
 ```
 
@@ -149,6 +153,8 @@ This is not required per the brief but demonstrates the data pipeline's usabilit
 - [ ] Write SQL answers for all 7 questions
 - [ ] Estimate table growth in documentation
 - [ ] (Optional) Add Streamlit dashboard
+- [ ] (Optional) Improved progress tracking during synthetic data generation
+- [ ] (Polishing) Model growth rate to counteract decay curve
 
 ## 📣 Stay Connected
 
