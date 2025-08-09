@@ -153,6 +153,8 @@ This is not required per the brief but demonstrates the data pipeline's usabilit
 - [ ] Write SQL answers for all 7 questions
 - [ ] Estimate table growth in documentation
 - [ ] (Optional) Add Streamlit dashboard
+- [ ] (Optional) Improved progress tracking during synthetic data generation
+- [ ] (Polishing) Model growth rate to counteract decay curve
 
 ## 📣 Stay Connected
 
