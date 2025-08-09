@@ -15,7 +15,7 @@ print("PYTHONPATH from runtime sys.path:")
 pprint.pprint(sys.path)
 
 # ✅ Imports from src/
-from load_to_duckdb import connect_to_duckdb, write_session_to_disk, stage_session
+from loader import connect_to_duckdb, write_session_to_disk, stage_session
 import utils
 
 
