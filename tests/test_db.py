@@ -15,7 +15,7 @@ print("PYTHONPATH from runtime sys.path:")
 pprint.pprint(sys.path)
 
 # ✅ Imports from src/
-from load_to_duckdb import connect_to_duckdb, write_session_to_disk, stage_session
+from loader import connect_to_duckdb, write_session_to_disk, stage_summary_sessions
 import utils
 
 
@@ -152,7 +152,7 @@ def test_stage_session(duck_conn):
         }
     ])
 
-    stage_session(df, duck_conn)
+    stage_summary_sessions(df, duck_conn)
 
     rows = duck_conn.execute("SELECT * FROM stage.fact_session").fetchall()
     assert len(rows) == 1

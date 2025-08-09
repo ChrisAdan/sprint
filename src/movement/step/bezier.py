@@ -4,7 +4,7 @@ def step(x, y, z, speed, t):
     """
     Compute the next position along a simple quadratic Bezier curve.
 
-    This uses static control points and blends the player’s position toward
+    This uses static control points and blends the player's position toward
     the Bezier path using time as the curve parameter.
 
     Args:

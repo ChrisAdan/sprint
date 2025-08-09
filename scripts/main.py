@@ -1,23 +1,13 @@
 from utils import generate_player_ids, model_sign_ons, assign_countries
 from session_generator import generate_sessions
-from load_to_duckdb import connect_to_duckdb
-from generate_products import generate_products  # NEW
+from loader import connect_to_duckdb
+from product_generator import generate_products
+from transaction_generator import generate_transactions
 
 def main():
-    """
-    Main entrypoint for the simulation pipeline.
-    - Connects to DuckDB
-    - Generates and saves dim_products.csv for dbt seeding
-    - Prompts user for number of players
-    - Generates player IDs and sign-on events
-    - Assigns countries
-    - Runs session simulation and inserts heartbeat + summary data into DuckDB
-    """
     print("📦 Connecting to DuckDB...")
     conn = connect_to_duckdb()
 
-    print("🛍 Generating product dimension seed file...")
-    generate_products()  # idempotent CSV overwrite
 
     print("👥 Generating player IDs...")
     try:
@@ -27,6 +17,17 @@ def main():
         return
 
     player_ids = generate_player_ids(n_players=n_players)
+    print(f"{n_players} unique players created.")
+
+    try:
+        n_products = int(input("Enter number of products to simulate (30-50 recommended): ").strip())
+    except ValueError:
+        print("❌ Invalid number entered.")
+        return
+
+    print("🛍 Generating product dimension seed file...")
+    generate_products(n_products)  # idempotent overwrite
+    print(f'{n_products} generated and saved to seeds.')
 
     print("📅 Modeling player sign-ons...")
     signins_df = model_sign_ons(player_ids, n_days=365)
@@ -34,9 +35,15 @@ def main():
 
     print("🎮 Generating sessions and inserting into DuckDB...")
     generate_sessions(signins_df, country_map, conn)
+    
+    print("💸 Generating transactions and inserting into DuckDB...")
+    # Read the product seed CSV so we can sample from it
+    import pandas as pd
+    products_df = pd.read_csv("dbt_project/seeds/dim_products.csv")
 
-    print("✅ Done! All sessions generated and stored.")
+    generate_transactions(signins_df, products_df, conn)
 
+    print("✅ Done! All data generated and stored.")
 
 if __name__ == "__main__":
     main()

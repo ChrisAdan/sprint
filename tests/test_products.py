@@ -8,11 +8,15 @@ Ensures generated products meet data integrity and business rule expectations.
 import os
 import pandas as pd
 import pytest
+import re
+import csv
 
 # Path to seed file (adjust if project structure changes)
 SEED_PATH = os.path.join(
     os.path.dirname(__file__), "..", "dbt_project", "seeds", "dim_products.csv"
 )
+CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "dbt_project", "seeds", "dim_products.csv")
+SKU_PATTERN = re.compile(r"^SKU-\d{4,}$")
 
 @pytest.fixture(scope="module")
 def products_df():
@@ -79,3 +83,11 @@ def test_cycle_values(products_df):
     assert all(cycle in ("", None) or pd.isna(cycle)
                for cycle in non_recurring_df["cycle"]), \
         "Non-recurring products must have empty or null cycle"
+
+
+def test_product_sku_format():
+    with open(CSV_PATH, newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            sku = row["productSku"]
+            assert SKU_PATTERN.match(sku), f"Invalid SKU format: {sku}"

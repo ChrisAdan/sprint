@@ -211,4 +211,4 @@ __marimo__/
 *.duckdb
 
 # sessions
-data/sessions/*.json
+data/*/*.json
