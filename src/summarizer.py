@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from loader import stage_session
+from loader import stage_summary_sessions
 
 
 def summarize_session(player_ids, session_id, session_end, durations, country_map, duck_conn):
@@ -28,4 +28,4 @@ def summarize_session(player_ids, session_id, session_end, durations, country_ma
         })
 
     summary_df = pd.DataFrame(summary_rows)
-    stage_session(summary_df, duck_conn)
+    stage_summary_sessions(summary_df, duck_conn)

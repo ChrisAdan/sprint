@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import duckdb
 import numpy as np
+import pandas as pd
 
 DB_PATH = Path("data/synthetic.duckdb")
 
@@ -12,6 +13,29 @@ def connect_to_duckdb():
     """
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     return duckdb.connect(DB_PATH)
+
+
+def ensure_table_exists(
+    duck_conn: duckdb.DuckDBPyConnection,
+    schema: str,
+    table: str,
+    columns_def: str,
+):
+    """
+    Ensures the given schema and table exist in DuckDB.
+
+    Args:
+        duck_conn: Active DuckDB connection.
+        schema: Schema name as string (e.g. 'raw').
+        table: Table name as string (e.g. 'event_session').
+        columns_def: Columns and types SQL string for CREATE TABLE.
+    """
+    duck_conn.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+    duck_conn.execute(f"""
+        CREATE TABLE IF NOT EXISTS {schema}.{table} (
+            {columns_def}
+        )
+    """)
 
 
 def write_json_to_disk_and_duckdb(
@@ -27,7 +51,7 @@ def write_json_to_disk_and_duckdb(
     Generic helper to write a JSON record to disk and insert into DuckDB.
 
     Args:
-        table_name (str): DuckDB table to insert into (must exist).
+        table_name (str): DuckDB table to insert into, e.g. 'raw.event_session'.
         record_id_col (str): Name of the primary key column.
         record_id (str): Primary key value for the record.
         json_obj (dict): JSON-serializable dictionary to save and insert.
@@ -36,6 +60,18 @@ def write_json_to_disk_and_duckdb(
         created_at_col (str): Column name for insertion timestamp.
     """
     directory.mkdir(parents=True, exist_ok=True)
+
+    # Parse schema and table
+    schema, table = table_name.split(".", 1)
+
+    # Define expected columns for this generic JSON table
+    columns_def = f"""
+        {record_id_col} VARCHAR PRIMARY KEY,
+        rawResponse VARCHAR,
+        {created_at_col} TIMESTAMP
+    """
+
+    ensure_table_exists(duck_conn, schema, table, columns_def)
 
     json_str = json.dumps(json_obj, indent=2)
     created_at = datetime.now(timezone.utc).isoformat()
@@ -71,32 +107,28 @@ def write_session_to_disk(session_id, session_start, session_end, heartbeat_data
     )
 
 
-def stage_session(summary_df, duck_conn):
+def stage_summary_sessions(summary_df, duck_conn):
     """
     Writes session summaries to stage.fact_session in DuckDB.
     """
-    duck_conn.execute("CREATE TABLE IF NOT EXISTS stage.fact_session AS SELECT * FROM summary_df LIMIT 0")
+
+    # Create the table with schema matching summary_df columns
+    cols = ", ".join(
+        f"{col} VARCHAR" if summary_df[col].dtype == object else
+        f"{col} INTEGER" if np.issubdtype(summary_df[col].dtype, np.integer) else
+        f"{col} DOUBLE" if np.issubdtype(summary_df[col].dtype, np.floating) else
+        f"{col} VARCHAR"
+        for col in summary_df.columns
+    )
+    ensure_table_exists(duck_conn, "stage", "fact_session", cols)
+
     duck_conn.register("summary_df", summary_df)
     duck_conn.execute("INSERT INTO stage.fact_session SELECT * FROM summary_df")
 
 
-def save_transactions_json(date_str, transactions, out_dir=None):
+def save_transactions_json(date, transactions, out_dir=None):
     """
     Saves a list of transaction records to a JSON file on disk for a given date.
-
-    Args:
-        date_str (str): Date string in "YYYY-MM-DD" format to use in the filename.
-        transactions (list of dict): List of transaction dictionaries to save.
-        out_dir (str or Path, optional): Directory path where the JSON file will be saved.
-            Defaults to "data/transactions" if not provided.
-
-    Behavior:
-        - Creates the output directory if it does not exist.
-        - Converts any NumPy data types (e.g., np.bool_, np.integer, np.floating) 
-          in the transactions to native Python types for JSON serialization compatibility.
-        - Saves the cleaned transactions list to a JSON file named 
-          "transactions_YYYYMMDD.json" inside the output directory.
-        - Prints a confirmation message with the count of saved transactions and file path.
     """
     transactions_dir = Path("data/transactions") if out_dir is None else Path(out_dir)
     transactions_dir.mkdir(parents=True, exist_ok=True)
@@ -113,7 +145,8 @@ def save_transactions_json(date_str, transactions, out_dir=None):
 
     clean_transactions = convert(transactions)
 
-    out_path = transactions_dir / f"transactions_{date_str.replace('-', '')}.json"
+    date_str = date.strftime("%Y%m%d")
+    out_path = transactions_dir / f"transactions_{date_str}.json"
     json_str = json.dumps(clean_transactions, indent=2)
     out_path.write_text(json_str)
     print(f"💾 Saved {len(transactions)} transactions to {out_path}")
@@ -125,19 +158,20 @@ def write_transactions_to_duckdb(transactions, duck_conn):
     """
     if not transactions:
         return
-    import pandas as pd
 
-    # Ensure 'raw' schema exists
-    duck_conn.execute("CREATE SCHEMA IF NOT EXISTS raw")
+    # # Prepare schema/table
+    # duck_conn.execute("CREATE SCHEMA IF NOT EXISTS raw")
 
     df = pd.DataFrame(transactions)
 
     # Normalize booleans and numpy types to Python native for safety
     df = df.convert_dtypes().astype(object)
 
-    duck_conn.execute("""
-        CREATE TABLE IF NOT EXISTS raw.event_transactions AS SELECT * FROM df LIMIT 0
-    """)
+    # Define columns based on df dtypes (simplified all as VARCHAR here)
+    cols = ", ".join(f"{col} VARCHAR" for col in df.columns)
+
+    ensure_table_exists(duck_conn, "raw", "event_transactions", cols)
+
     duck_conn.register("transactions_df", df)
     duck_conn.execute("INSERT INTO raw.event_transactions SELECT * FROM transactions_df")
     print(f"📥 Inserted {len(df)} transactions into raw.event_transactions")

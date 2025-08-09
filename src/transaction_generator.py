@@ -22,7 +22,7 @@ def assign_behavior():
     return "no_purchase"  # fallback
 
 
-def generate_transactions_for_player_day(player_id, date_str, products_df):
+def generate_transactions_for_player_day(player_id, date, products_df):
     """Generate transactions list for a player on a specific day."""
     bucket = assign_behavior()
     if bucket == "no_purchase":
@@ -35,7 +35,7 @@ def generate_transactions_for_player_day(player_id, date_str, products_df):
     for _ in range(num_purchases):
         product = products_df.sample(1).iloc[0]
         amount = round(random.uniform(cfg["min_amount"], cfg["max_amount"]), 2)
-        ts = datetime.strptime(date_str, "%Y-%m-%d") + pd.to_timedelta(random.randint(0, 86399), unit="s")
+        ts = pd.to_datetime(date) + pd.to_timedelta(random.randint(0, 86399), unit="s")
 
         transactions.append({
             "transactionId": f"TX-{player_id[:8]}-{ts.strftime('%Y%m%d%H%M%S')}-{random.randint(1000,9999)}",
@@ -62,13 +62,13 @@ def generate_transactions(signins_df, products_df, conn):
         conn (duckdb.DuckDBPyConnection)
     """
     grouped = signins_df.groupby("date")
-    for date_str, day_df in grouped:
+    for date, day_df in grouped:
         all_transactions = []
         for _, row in day_df.iterrows():
             player_id = row["playerId"]
-            txs = generate_transactions_for_player_day(player_id, date_str, products_df)
+            txs = generate_transactions_for_player_day(player_id, date, products_df)
             all_transactions.extend(txs)
 
         # Save to disk json + write to DuckDB via helpers
-        save_transactions_json(date_str, all_transactions)
+        save_transactions_json(date, all_transactions)
         write_transactions_to_duckdb(all_transactions, conn)

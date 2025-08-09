@@ -7,8 +7,8 @@ from itertools import islice
 import numpy as np
 import pandas as pd
 
-from heartbeat_generator import simulate_heartbeats
-from loader import write_session_to_disk, stage_session
+from heartbeat_generator import simulate_heartbeats, STEP_FUNCTIONS
+from loader import write_session_to_disk, stage_summary_sessions
 from utils import SESSION_PATH, SESSION_MAX_DURATION_SECONDS, \
     MIN_TEAMS, MAX_TEAMS, MIN_PLAYERS_PER_TEAM, MAX_PLAYERS_PER_TEAM, AVG_DAILY_SESSIONS
 
@@ -76,13 +76,25 @@ def generate_sessions(
             speed_map = {pid: np.random.randint(1, 4) for pid in group}
             durations = {pid: np.random.randint(120, SESSION_MAX_DURATION_SECONDS + 1) for pid in group}
 
+            teams = {
+                team_ids[i]: group[i * players_per_team : (i + 1) * players_per_team]
+                for i in range(num_teams)
+            }
+
+            team_ids = {pid: tid for tid, players in teams.items() for pid in players}
+
+            # Possible behaviors
+            behavior_types = list(STEP_FUNCTIONS.keys())  # ["lorentzian", "bezier", "lissajous", "perlin"]
+            behavior_map = {pid: random.choice(behavior_types) for pid in group}
+
             heartbeat_data = simulate_heartbeats(
                 player_ids=group,
                 session_id=session_id,
-                team_ids=list(teams.keys()),
+                team_ids=team_ids,
                 session_start=session_start,
                 speed_map=speed_map,
                 durations=durations,
+                behavior_map=behavior_map,
             )
 
             total_kills = np.random.randint(10, 60)
@@ -119,4 +131,4 @@ def generate_sessions(
     summary_df = pd.DataFrame(summaries)
 
     # Idempotent overwrite stage table
-    stage_session(summary_df, duck_conn)
+    stage_summary_sessions(summary_df, duck_conn)

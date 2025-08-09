@@ -48,7 +48,7 @@ def model_sign_ons(player_ids, n_days=365, start_date="2025-01-01", seed=RANDOM_
                 'decay': max(0.9 - x, 0.1)
             }[behavior]
             if np.random.rand() < p:
-                records.append({"player_id": pid, "date": date.date()})
+                records.append({"playerId": pid, "date": date.date()})
     return pd.DataFrame(records)
 
 def assign_countries(player_ids, seed=42):
