@@ -8,8 +8,6 @@ def main():
     print("📦 Connecting to DuckDB...")
     conn = connect_to_duckdb()
 
-    print("🛍 Generating product dimension seed file...")
-    generate_products()  # idempotent overwrite
 
     print("👥 Generating player IDs...")
     try:
@@ -19,6 +17,17 @@ def main():
         return
 
     player_ids = generate_player_ids(n_players=n_players)
+    print(f"{n_players} unique players created.")
+
+    try:
+        n_products = int(input("Enter number of products to simulate (30-50 recommended): ").strip())
+    except ValueError:
+        print("❌ Invalid number entered.")
+        return
+
+    print("🛍 Generating product dimension seed file...")
+    generate_products(n_products)  # idempotent overwrite
+    print(f'{n_products} generated and saved to seeds.')
 
     print("📅 Modeling player sign-ons...")
     signins_df = model_sign_ons(player_ids, n_days=365)
@@ -26,7 +35,7 @@ def main():
 
     print("🎮 Generating sessions and inserting into DuckDB...")
     generate_sessions(signins_df, country_map, conn)
-
+    
     print("💸 Generating transactions and inserting into DuckDB...")
     # Read the product seed CSV so we can sample from it
     import pandas as pd
