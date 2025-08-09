@@ -11,6 +11,7 @@ SESSION_MAX_DURATION_SECONDS = 1800
 COUNTRIES = ['US', 'BR', 'MX', 'FR', 'ES', 'DE']
 SESSION_PATH = Path("data/sessions")
 SESSION_PATH.mkdir(parents=True, exist_ok=True)
+AVG_DAILY_SESSIONS = 10
 
 MIN_TEAMS = 1
 MAX_TEAMS = 5
