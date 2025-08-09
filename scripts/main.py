@@ -1,12 +1,13 @@
-from src.utils import generate_player_ids, model_sign_ons, assign_countries
-from src.session_generator import generate_sessions
-from src.load_to_duckdb import connect_to_duckdb
-
+from utils import generate_player_ids, model_sign_ons, assign_countries
+from session_generator import generate_sessions
+from load_to_duckdb import connect_to_duckdb
+from generate_products import generate_products  # NEW
 
 def main():
     """
     Main entrypoint for the simulation pipeline.
     - Connects to DuckDB
+    - Generates and saves dim_products.csv for dbt seeding
     - Prompts user for number of players
     - Generates player IDs and sign-on events
     - Assigns countries
@@ -14,6 +15,9 @@ def main():
     """
     print("📦 Connecting to DuckDB...")
     conn = connect_to_duckdb()
+
+    print("🛍 Generating product dimension seed file...")
+    generate_products()  # idempotent CSV overwrite
 
     print("👥 Generating player IDs...")
     try:

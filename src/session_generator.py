@@ -7,10 +7,10 @@ from itertools import islice
 import numpy as np
 import pandas as pd
 
-from src.load_to_duckdb import write_session_to_disk, stage_session
+from load_to_duckdb import write_session_to_disk, stage_session
 
-from src.utils import SESSION_MAX_DURATION_SECONDS, \
-    MIN_TEAMS, MAX_TEAMS, MIN_PLAYERS_PER_TEAM, MAX_PLAYERS_PER_TEAM
+from utils import SESSION_PATH, SESSION_MAX_DURATION_SECONDS, \
+    MIN_TEAMS, MAX_TEAMS, MIN_PLAYERS_PER_TEAM, MAX_PLAYERS_PER_TEAM, AVG_DAILY_SESSIONS
 
 
 def simulate_heartbeats(player_ids, session_id, team_ids, session_start, speed_map, durations):
@@ -20,7 +20,7 @@ def chunked(iterable, size):
     it = iter(iterable)
     return iter(lambda: list(islice(it, size)), [])
 
-def generate_sessions(signins_df, country_map, duck_conn, average_sessions_per_day=10):
+def generate_sessions(signins_df, country_map, duck_conn, average_sessions_per_day=AVG_DAILY_SESSIONS, session_dir: Path = None):
     summaries = []
     players_by_day = signins_df.groupby("date")["player_id"].apply(list)
 
@@ -86,7 +86,8 @@ def generate_sessions(signins_df, country_map, duck_conn, average_sessions_per_d
                 session_start=session_start,
                 session_end=session_end,
                 heartbeat_data=heartbeat_data,
-                duck_conn=duck_conn
+                duck_conn=duck_conn,
+                session_dir=SESSION_PATH
             )
 
             sessions_today += 1
