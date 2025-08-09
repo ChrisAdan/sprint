@@ -7,6 +7,7 @@ from itertools import islice
 import numpy as np
 import pandas as pd
 
+from heartbeat_generator import simulate_heartbeats
 from loader import write_session_to_disk, stage_session
 from utils import SESSION_PATH, SESSION_MAX_DURATION_SECONDS, \
     MIN_TEAMS, MAX_TEAMS, MIN_PLAYERS_PER_TEAM, MAX_PLAYERS_PER_TEAM, AVG_DAILY_SESSIONS
