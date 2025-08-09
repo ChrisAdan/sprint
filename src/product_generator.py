@@ -9,44 +9,86 @@ import os
 import csv
 import random
 from datetime import datetime, timezone
+from utils import DIM_PRODUCTS_CSV
 
 # Configuration
 NUM_PRODUCTS = 40  # or random.randint(30, 50)
-OUTPUT_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "dbt_project", "seeds", "dim_products.csv"
-)
+OUTPUT_PATH = DIM_PRODUCTS_CSV
+
 
 TIERS = ["Premium", "Standard"]
 TRANSACTION_TYPES = ["BattlePass", "Emote", "Skin"]
 
+# Example realistic names for each product type
+BATTLEPASS_NAMES = [
+    "Season of the Eclipse",
+    "Nightfall Pass",
+    "Guardian's Journey",
+    "Legends BattlePass",
+    "Shadow Frontier",
+    "Iron Vanguard Pass",
+    "Celestial War",
+    "Dawnbreaker Pass",
+]
+
+EMOTE_NAMES = [
+    "Victory Dance",
+    "Thumbs Up",
+    "Laugh Out Loud",
+    "Salute",
+    "Facepalm",
+    "Mic Drop",
+    "Air Guitar",
+    "Wave Hello",
+    "Cheer",
+]
+
+SKIN_NAMES = [
+    "Crimson Phantom",
+    "Obsidian Knight",
+    "Solar Flare",
+    "Arctic Camo",
+    "Golden Hunter",
+    "Nebula Striker",
+    "Midnight Ranger",
+    "Electric Surge",
+]
 
 def generate_products(n):
-    """
-    Generate n synthetic product records as a list of dicts.
-
-    Each record includes:
-    - productId, productSku
-    - tier, quantity, purchasePrice (USD)
-    - transactionType, isRecurring, cycle
-    - createdAt, lastModifiedAt timestamps (UTC ISO8601)
-    """
     now_iso = datetime.now(timezone.utc).isoformat()
     products = []
     for i in range(n):
-        is_recurring = random.choice([True, False])
-        cycle = random.choice(["M", "Y"]) if is_recurring else ""
+        transaction_type = random.choice(TRANSACTION_TYPES)
+
+        if transaction_type == "BattlePass":
+            is_recurring = True
+            cycle = random.choice(["M", "Y"])
+            product_name = random.choice(BATTLEPASS_NAMES)
+        elif transaction_type == "Emote":
+            is_recurring = False
+            cycle = None
+            product_name = random.choice(EMOTE_NAMES)
+        else:  # Skin
+            is_recurring = False
+            cycle = None
+            product_name = random.choice(SKIN_NAMES)
+        pid = i + 1
+        sku = f"SKU-{1000 + i}"
+        tier = random.choice(TIERS)
+        price = round(random.uniform(1.99, 99.99), 2)
         products.append({
-            "productId": i + 1,
-            "productSku": f"SKU-{1000 + i}",
-            "tier": random.choice(TIERS),
-            "quantity": random.randint(1, 10),
-            "purchasePrice": round(random.uniform(1.99, 99.99), 2),
-            "transactionType": random.choice(TRANSACTION_TYPES),
+            "productId": pid,
+            "productSku": sku,
+            "productName": product_name,
+            "tier": tier,
+            "purchasePrice": price,
+            "transactionType": transaction_type,
             "isRecurring": is_recurring,
             "cycle": cycle,
             "createdAt": now_iso,
             "lastModifiedAt": now_iso
         })
+        print(f'Generated [{sku}]: {product_name} | {tier} | Recurring: {is_recurring} | Price: {price} | Created at: {now_iso}')
     return products
 
 
