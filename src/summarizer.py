@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.load_to_duckdb import stage_session
+from loader import stage_session
 
 
 def summarize_session(player_ids, session_id, session_end, durations, country_map, duck_conn):

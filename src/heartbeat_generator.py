@@ -1,6 +1,5 @@
 from datetime import timedelta
 import numpy as np
-from pathlib import Path
 
 from utils import HEARTBEAT_INTERVAL, GRID_BOUNDS
 from movement.step import lorentzian, bezier, lissajous, perlin
