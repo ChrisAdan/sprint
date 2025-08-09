@@ -58,22 +58,49 @@ Close encounters are derived from heartbeat data in dbt using spatial proximity 
 ## 🗂️ Folder Structure
 
 ```bash
-bungie_analytics/
-├── data/ # Output folder for synthetic data
-├── scripts/
-│ ├── generate_sample_data.py # Python script to generate JSON/CSV payloads
-│ ├── ingest_to_duckdb.py # Load raw data into DuckDB
-├── dbt_project/ # dbt models and transformations
-│ ├── models/
-│ │ ├── stg_*.sql
-│ │ ├── fact_sessions.sql
-│ │ ├── fact_encounters.sql
-│ │ ├── dim_players.sql
-│ │ └── ...
-├── queries/ # SQL files answering the 7 questions
-├── streamlit_app.py # Optional dashboard
+sprint/
+├── data/                      # Output folder for synthetic JSON/CSV/Parquet data
+│
+├── scripts/                   # CLI entry points for the pipeline
+│   ├── generate_sample_data.py # Orchestrates session, heartbeat, and summary generation
+│   ├── ingest_to_duckdb.py     # Loads raw JSON/CSV data into DuckDB
+│
+├── src/                       # Core simulation logic
+│   ├── __init__.py
+│   ├── session_generator.py   # Creates player sessions and metadata
+│   ├── heartbeat_generator.py # Simulates player movement heartbeats in 3D space
+│   ├── summarizer.py          # Aggregates kills, deaths, session stats
+│   ├── movement/              # Movement function implementations
+│   │   ├── __init__.py
+│   │   ├── step/
+│   │   │   ├── lorentzian.py
+│   │   │   ├── bezier.py
+│   │   │   ├── lissajous.py
+│   │   │   ├── perlin.py
+│   │   │   └── ...
+│
+├── dbt_project/               # dbt transformations
+│   ├── seeds/                 # Static reference data (e.g., movement type lookup)
+│   │   ├── movement_types.csv
+│   │   └── ...
+│   ├── models/
+│   │   ├── staging/           # stg_* models to clean/normalize raw data
+│   │   │   ├── stg_sessions.sql
+│   │   │   ├── stg_heartbeats.sql
+│   │   │   └── ...
+│   │   ├── marts/             # Final analytics tables
+│   │   │   ├── fact_sessions.sql
+│   │   │   ├── fact_encounters.sql
+│   │   │   ├── dim_players.sql
+│   │   │   └── ...
+│   ├── dbt_project.yml
+│
+├── queries/                   # Standalone SQL scripts for the 7 business questions
+│
+├── streamlit_app.py           # Optional interactive dashboard
 ├── README.md
 └── LICENSE
+
 ```
 
 ---
