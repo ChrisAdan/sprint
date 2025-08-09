@@ -81,7 +81,7 @@ sprint/
 │
 ├── dbt_project/               # dbt transformations
 │   ├── seeds/                 # Static reference data (e.g., movement type lookup)
-│   │   ├── movement_types.csv
+│   │   ├── dim_products.csv
 │   │   └── ...
 │   ├── models/
 │   │   ├── staging/           # stg_* models to clean/normalize raw data
