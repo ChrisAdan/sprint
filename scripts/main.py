@@ -45,13 +45,14 @@ def generate_new_player_ids(n, existing_ids_set):
 def run_players(conn, days=365, initial_players=1000, daily_growth_rate=0.001, daily_decay_rate=0.0007):
     """
     Generate players modeling conservative growth and decay over a period,
-    unless user opts to reuse existing players.
+    assigning countries and saving to dim_players.
     """
     existing_players_df = load_table_to_df(conn, "sprint_dim", "dim_players")
     if existing_players_df is not None and not existing_players_df.empty:
         print(f"⚠️ Found {len(existing_players_df)} existing players in DuckDB.")
         if prompt_yes_no("Do you want to reuse the existing players instead of regenerating?"):
-            return existing_players_df["playerId"].tolist()
+            return existing_players_df[["playerId", "country"]]
+
         else:
             print("❗ Clearing players and downstream data...")
             clear_old_data(conn, level="players")
@@ -79,10 +80,20 @@ def run_players(conn, days=365, initial_players=1000, daily_growth_rate=0.001, d
             churned = set(np.random.choice(list(daily_active_players), churn_count, replace=False))
             daily_active_players.difference_update(churned)
 
-    df_players = pd.DataFrame({"playerId": list(all_player_ids)})
+    # Assign countries to all players
+    all_player_ids_list = list(all_player_ids)
+    countries_map = assign_countries(all_player_ids_list)  # assume returns dict {playerId: country}
+
+    # Create DataFrame with playerId and country
+    df_players = pd.DataFrame({
+        "playerId": all_player_ids_list,
+        "country": [countries_map.get(pid, "Unknown") for pid in all_player_ids_list]
+    })
+
     write_dataframe_to_table(conn, "sprint_dim", "dim_players", df_players, primary_key="playerId", replace=True)
 
-    print(f"✅ Generated {len(all_player_ids)} total players with growth and decay over {days} days.")
+    print(f"✅ Generated {len(all_player_ids)} total players with countries assigned over {days} days.")
+    return df_players
     return list(all_player_ids)
 
 
