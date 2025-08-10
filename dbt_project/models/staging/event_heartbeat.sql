@@ -17,7 +17,7 @@ with source as (
 
 expanded as (
     select 
-        (rawResponse->>'$.sessionId')::varchar       as session_id,
+        (hb.value->>'$.sessionId')::varchar       as session_id,
         (hb.value->>'$.timestamp')::timestamp       as event_datetime,
         (hb.value->>'$.playerId')::varchar          as player_id,
         (hb.value->>'$.teamId')::varchar            as team_id,

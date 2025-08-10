@@ -86,7 +86,69 @@ sources:
               - not_null
               - accepted_values:
                   values: ["BattlePass", "Emote", "Skin"]
+  - name: sprint_stage
+    tables:
+      - name: fact_session
+        description: "Session summary data loaded from external Python simulation"
+        columns:
+          - name: playerId
+            description: "Player ID"
+            data_type: string
+            tests:
+              - not_null
 
+          - name: sessionId
+            description: "Session ID"
+            data_type: string
+            tests:
+              - not_null
+
+          - name: eventDateTime
+            description: "Timestamp of the event"
+            data_type: timestamp
+            tests:
+              - not_null
+
+          - name: country
+            description: "Player country"
+            data_type: string
+            tests:
+              - not_null
+
+          - name: eventLengthSeconds
+            description: "Session length in seconds"
+            data_type: integer
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+
+          - name: kills
+            description: "Kills in session"
+            data_type: integer
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+
+          - name: deaths
+            description: "Deaths in session"
+            data_type: integer
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+  - name: sprint_dim
+    tables:
+      - name: dim_players
+        description: "Dimension table of players"
+        columns:
+          - name: playerId
+            description: "Unique player identifier"
+            data_type: string
+            tests:
+              - not_null
+              - unique
 models:
   - name: event_heartbeat
     description: "Flattened heartbeat data extracted from event_session. One row per heartbeat."

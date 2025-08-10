@@ -123,18 +123,63 @@ def load_table_to_df(duck_conn: duckdb.DuckDBPyConnection, schema: str, table: s
         return None
 
 def clear_old_data(duck_conn, level="all"):
-    schema = "raw"
-    tables_by_level = {
-        "players": ["dim_players", "dim_products", "fact_signons", "event_session", "event_transaction"],
-        "signons": ["fact_signons", "event_session", "event_transaction"],
-        "sessions": ["event_session", "event_transaction"],
-        "transactions": ["event_transaction"],
-        "all": ["dim_players", "dim_products", "fact_signons", "event_session", "event_transaction"]
+    # Base level definitions (no overlap)
+    base_tables = {
+        "players": {
+            "sprint_dim.dim_players",
+            "sprint_dim.dim_products",
+            "sprint_raw.event_signons",
+            "sprint_raw.event_session",
+            "sprint_raw.event_transaction",
+        },
+        "signons": {
+            "sprint_raw.event_signons",
+            "sprint_raw.event_session",
+            "sprint_raw.event_transaction",
+        },
+        "sessions": {
+            "sprint_raw.event_session",
+            "sprint_raw.event_transaction",
+            "sprint_stage.event_heartbeat",
+            "sprint_stage.fact_session",
+            "sprint_stage.stage_centroids",
+            "sprint_stage.stage_encounters",
+        },
+        "transactions": {
+            "sprint_raw.event_transaction",
+        },
+        "mart": {
+            "sprint_mart.encounter_summary_daily",
+            "sprint_mart.player_activity_daily",
+        }
     }
-    tables_to_drop = tables_by_level.get(level, [])
+
+    # Cascade definitions: each level includes its own plus lower levels
+    cascades = {
+        "players": base_tables["players"],
+        "signons": base_tables["signons"],
+        "sessions": base_tables["sessions"],
+        "transactions": base_tables["transactions"],
+        "mart": base_tables["mart"],
+        "all": set().union(
+            base_tables["players"],
+            base_tables["signons"],
+            base_tables["sessions"],
+            base_tables["transactions"],
+            base_tables["mart"],
+        )
+    }
+
+    tables_to_drop = cascades.get(level)
+    if not tables_to_drop:
+        print(f"No tables configured for level '{level}'")
+        return
+
     for table in tables_to_drop:
         try:
-            duck_conn.execute(f"DROP TABLE IF EXISTS {schema}.{table}")
-            print(f"Dropped table {schema}.{table}")
+            duck_conn.execute(f"DROP TABLE IF EXISTS {table}")
+            print(f"Dropped table {table}")
         except Exception as e:
-            print(f"Warning: Could not drop table {schema}.{table}: {e}")
+            print(f"Warning: Could not drop table {table}: {e}")
+
+
