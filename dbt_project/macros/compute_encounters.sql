@@ -1,4 +1,4 @@
-{% macro compute_encounters(centroids_table, distance_threshold=50, cooldown_heartbeats=6) %}
+{% macro compute_encounters(centroids_table, distance_threshold=50, cooldown_seconds=180) %}
 
 with team_pairs as (
     select
@@ -18,56 +18,90 @@ with team_pairs as (
      and a.team_id < b.team_id
 ),
 
-flagged as (
+distance_flags as (
     select
-        session_id,
-        team_1_id,
-        team_2_id,
-        event_datetime,
+        *,
         case when distance <= {{ distance_threshold }} then 1 else 0 end as is_close
     from team_pairs
 ),
 
-lagged as (
+ordered as (
     select
         *,
-        lag(event_datetime) over (partition by session_id, team_1_id, team_2_id order by event_datetime) as lag_event_datetime
-    from flagged
+        lag(is_close) over (partition by session_id, team_1_id, team_2_id order by event_datetime) as prev_is_close,
+        lag(event_datetime) over (partition by session_id, team_1_id, team_2_id order by event_datetime) as prev_event_datetime
+    from distance_flags
 ),
 
-diffed as (
+-- Mark boundaries of new groups when:
+-- 1) This is the first row (prev_is_close is null), OR
+-- 2) Previous was not close AND current is close (encounter starts), OR
+-- 3) Gap between this and previous event is > cooldown and previous was not close (long break)
+group_boundaries as (
     select
         *,
-        coalesce(
-          extract(epoch from event_datetime) - extract(epoch from lag_event_datetime),
-          0
-        ) as seconds_since_prev
-    from lagged
+        case 
+          when prev_is_close is null then 1
+          when is_close = 1 and prev_is_close = 0 then 1
+          when extract(epoch from event_datetime - prev_event_datetime) > {{ cooldown_seconds }} and prev_is_close = 0 then 1
+          else 0
+        end as new_group_flag
+    from ordered
 ),
 
-grouped_flags as (
+grouped as (
     select
         *,
-        sum(
-          case 
-            when is_close = 0 and seconds_since_prev > {{ cooldown_heartbeats * 30 }} then 1
-            else 0
-          end
-        ) over (partition by session_id, team_1_id, team_2_id order by event_datetime rows between unbounded preceding and current row) as encounter_group
-    from diffed
+        sum(new_group_flag) over (partition by session_id, team_1_id, team_2_id order by event_datetime rows unbounded preceding) as encounter_group
+    from group_boundaries
 ),
 
+-- Filter only rows inside encounters (is_close=1) or within cooldown after encounter ended
+-- Because we want to include the cooldown period after last close heartbeat as part of encounter duration
+final_encounter as (
+    select
+        session_id,
+        team_1_id,
+        team_2_id,
+        encounter_group,
+        event_datetime,
+        is_close,
+        lead(event_datetime) over (partition by session_id, team_1_id, team_2_id, encounter_group order by event_datetime) as next_event_datetime
+    from grouped
+    where encounter_group > 0
+),
+
+-- Calculate encounter window start and end times
 encounter_windows as (
     select
         session_id,
         team_1_id,
         team_2_id,
+        encounter_group,
         min(event_datetime) as encounter_start,
-        max(event_datetime) as encounter_end
-    from grouped_flags
-    where is_close = 1
+        -- Extend encounter end by cooldown seconds after last close heartbeat
+        max(
+            case 
+                when next_event_datetime is null then event_datetime + interval '{{ cooldown_seconds }} seconds'
+                else next_event_datetime
+            end
+        ) as encounter_end
+    from final_encounter
     group by session_id, team_1_id, team_2_id, encounter_group
+),
+
+-- Remove encounters with zero or negative duration (just in case)
+cleaned_encounters as (
+    select
+        session_id,
+        team_1_id,
+        team_2_id,
+        encounter_start,
+        encounter_end
+    from encounter_windows
+    where encounter_end > encounter_start
 )
 
-select * from encounter_windows
+select * from cleaned_encounters
+
 {% endmacro %}

@@ -8,5 +8,5 @@
 {{ compute_encounters(
     centroids_table=ref('stage_centroids'),
     distance_threshold=50,
-    cooldown_heartbeats=6
+    cooldown_seconds=180
 ) }}
