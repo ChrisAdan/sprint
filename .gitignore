@@ -212,4 +212,4 @@ __marimo__/
 *.duckdb.wal
 
 # sessions
-data/*/*.json
+data/sessions/*.json

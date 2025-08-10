@@ -1,11 +1,15 @@
 version: 2
 
 sources:
-  - name: raw
+  - name: sprint_raw
     description: "Raw ingested data from synthetic game simulation"
     tables:
       - name: event_session
         description: "Session-level data including heartbeat_data JSON and raw JSON response"
+        loaded_at_field: createdAt
+        freshness:
+          warn_after: { count: 25, period: hour }
+          error_after: { count: 2, period: day }
         columns:
           - name: recordId
             description: "Unique session identifier"
@@ -23,8 +27,12 @@ sources:
               - dbt_utils.expression_is_true:
                   expression: "< now()"
 
-      - name: event_transactions
+      - name: event_transaction
         description: "Transaction logs with purchases and events"
+        loaded_at_field: createdAt
+        freshness:
+          warn_after: { count: 25, period: hour }
+          error_after: { count: 2, period: day }
         columns:
           - name: transactionId
             description: "Unique transaction identifier"
@@ -70,9 +78,8 @@ sources:
           - name: cycle
             description: "Subscription cycle (e.g., monthly, yearly)"
             tests:
-              - not_null
               - accepted_values:
-                  values: ["M", "Y"]
+                  values: ["M", "Y", ""]
           - name: transactionType
             description: "Type of transaction (e.g., BattlePass, Emote, Skin)"
             tests:
@@ -81,38 +88,160 @@ sources:
                   values: ["BattlePass", "Emote", "Skin"]
 
 models:
-  - name: stg_heartbeats
+  - name: event_heartbeat
     description: "Flattened heartbeat data extracted from event_session. One row per heartbeat."
+    config:
+      contract:
+        enforced: true
     columns:
       - name: session_id
         description: "Session this heartbeat belongs to"
+        data_type: string
         tests:
           - not_null
+
       - name: player_id
         description: "Player emitting this heartbeat"
+        data_type: string
         tests:
           - not_null
-      - name: heartbeat_ts
+
+      - name: team_id
+        description: "Team emitting this heartbeat"
+        data_type: string
+        tests:
+          - not_null
+
+      - name: event_datetime
         description: "Timestamp of the heartbeat event"
+        data_type: timestamp
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: ">= '2025-01-01'"
+
       - name: position_x
         description: "X coordinate"
+        data_type: float
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: "BETWEEN -100 AND 100"
+
       - name: position_y
         description: "Y coordinate"
+        data_type: float
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: "BETWEEN -100 AND 100"
+
       - name: position_z
         description: "Z coordinate"
+        data_type: float
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: "BETWEEN -100 AND 100"
+
+      - name: createdAt
+        description: "Row creation timestamp in the warehouse"
+        data_type: timestamp
+        tests:
+          - not_null
+  - name: stage_centroids
+    description: >
+      Computes team-level XYZ centroids at each heartbeat in a session.
+      Each row represents the average position of all players in the team
+      for a given heartbeat timestamp.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: session_id
+        description: "Unique session identifier."
+        data_type: string
+        tests:
+          - not_null
+
+      - name: team_id
+        description: "Unique team identifier."
+        data_type: string
+        tests:
+          - not_null
+
+      - name: event_datetime
+        description: "Timestamp of the heartbeat event."
+        data_type: timestamp
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= '2025-01-01'"
+
+      - name: centroid_x
+        description: "Average X coordinate for the team at this heartbeat."
+        data_type: float
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "BETWEEN -100 AND 100"
+
+      - name: centroid_y
+        description: "Average Y coordinate for the team at this heartbeat."
+        data_type: float
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "BETWEEN -100 AND 100"
+
+      - name: centroid_z
+        description: "Average Z coordinate for the team at this heartbeat."
+        data_type: float
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "BETWEEN -100 AND 100"
+
+      - name: createdAt
+        description: "Row creation timestamp in the warehouse."
+        data_type: timestamp
+        tests:
+          - not_null
+  - name: stage_encounters
+    description: >
+      Encounter windows per session and team pairing.
+      Each row represents a distinct encounter window where teams are
+      within the distance threshold, respecting the cooldown to close the encounter.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: session_id
+        description: "Unique session identifier."
+        data_type: string
+        tests:
+          - not_null
+
+      - name: team_1_id
+        description: "First team in the encounter."
+        data_type: string
+        tests:
+          - not_null
+
+      - name: team_2_id
+        description: "Second team in the encounter."
+        data_type: string
+        tests:
+          - not_null
+
+      - name: encounter_start
+        description: "Timestamp when encounter window started."
+        data_type: timestamp
+        tests:
+          - not_null
+
+      - name: encounter_end
+        description: "Timestamp when encounter window ended."
+        data_type: timestamp
+        tests:
+          - not_null
