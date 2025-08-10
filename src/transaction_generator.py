@@ -55,7 +55,6 @@ def generate_transactions_for_player_day(player_id, date, products_df):
             "eventDateTime": ts.isoformat(),
             "purchaseItem": product["productSku"],
             "purchasePrice": amount,  # USD
-            "purchaseQuantity": product["quantity"],
             "currency": "USD",
             "isRecurring": is_recurring,
             "cycle": cycle,
@@ -92,7 +91,7 @@ def generate_transactions(signins_df, products_df, duck_conn):
 
         write_dataframe_to_table(
             duck_conn=duck_conn,
-            schema="raw",
+            schema="sprint_raw",
             table="event_transaction",
             df=df_tx,
             primary_key="transactionId",
