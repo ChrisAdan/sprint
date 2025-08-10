@@ -87,8 +87,6 @@ def generate_transactions(signins_df, products_df, duck_conn):
 
         # Convert numpy types to native Python types before write
         df_tx = df_tx.map(convert_numpy_types)
-        print(f'saving {len(df_tx)} to csv')
-        df_tx.to_csv('test.csv', index=False)
 
         print(f'Writing transactions for {date}')
 

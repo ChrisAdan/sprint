@@ -47,7 +47,7 @@ def run_players(conn, days=365, initial_players=1000, daily_growth_rate=0.001, d
     Generate players modeling conservative growth and decay over a period,
     unless user opts to reuse existing players.
     """
-    existing_players_df = load_table_to_df(conn, "raw", "dim_players")
+    existing_players_df = load_table_to_df(conn, "sprint_dim", "dim_players")
     if existing_players_df is not None and not existing_players_df.empty:
         print(f"⚠️ Found {len(existing_players_df)} existing players in DuckDB.")
         if prompt_yes_no("Do you want to reuse the existing players instead of regenerating?"):
@@ -80,7 +80,7 @@ def run_players(conn, days=365, initial_players=1000, daily_growth_rate=0.001, d
             daily_active_players.difference_update(churned)
 
     df_players = pd.DataFrame({"playerId": list(all_player_ids)})
-    write_dataframe_to_table(conn, "dim", "dim_players", df_players, primary_key="playerId", replace=True)
+    write_dataframe_to_table(conn, "sprint_dim", "dim_players", df_players, primary_key="playerId", replace=True)
 
     print(f"✅ Generated {len(all_player_ids)} total players with growth and decay over {days} days.")
     return list(all_player_ids)
@@ -104,7 +104,7 @@ def run_products():
 
 
 def run_signons(conn, player_ids):
-    signons_df = load_table_to_df(conn, "raw", "event_signons")
+    signons_df = load_table_to_df(conn, "sprint_raw", "event_signons")
     if signons_df is not None:
         print(f"⚠️ Found existing sign-ons data with {len(signons_df)} records in DuckDB.")
         if prompt_yes_no("Do you want to use the existing sign-ons instead of regenerating?"):
@@ -112,7 +112,7 @@ def run_signons(conn, player_ids):
 
     print("📅 Modeling player sign-ons...")
     signons_df = model_sign_ons(player_ids, n_days=365)
-    write_dataframe_to_table(conn, "raw", "event_signons", signons_df, replace=True)
+    write_dataframe_to_table(conn, "sprint_raw", "event_signons", signons_df, replace=True)
     return signons_df, assign_countries(player_ids)
 
 
@@ -152,30 +152,30 @@ def main():
 
     if args.entrypoint in ("signons", "all"):
         if player_ids is None:
-            players_df = load_table_to_df(conn, "raw", "dim_players")
+            players_df = load_table_to_df(conn, "sprint_dim", "dim_players")
             if players_df is None or players_df.empty:
                 print("⚠️ No players found in DB, generating default players.")
                 player_ids = generate_player_ids(DEFAULT_STARTING_PLAYERS)
                 df_players = pd.DataFrame({"playerId": player_ids})
-                write_dataframe_to_table(conn, "raw", "dim_players", df_players, primary_key="playerId", replace=True)
+                write_dataframe_to_table(conn, "sprint_dim", "dim_players", df_players, primary_key="playerId", replace=True)
             else:
                 player_ids = players_df["playerId"].tolist()
         signons_df, country_map = run_signons(conn, player_ids)
 
     if args.entrypoint in ("sessions", "all"):
         if signons_df is None:
-            signons_df = load_table_to_df(conn, "raw", "fact_signons")
+            signons_df = load_table_to_df(conn, "sprint_raw", "event_signons")
             if signons_df is None:
                 print("⚠️ No sign-ons found in DB, regenerating.")
-                players_df = load_table_to_df(conn, "raw", "dim_players")
+                players_df = load_table_to_df(conn, "sprint_dim", "dim_players")
                 if players_df is None or players_df.empty:
                     player_ids = generate_player_ids(DEFAULT_STARTING_PLAYERS)
                     df_players = pd.DataFrame({"playerId": player_ids})
-                    write_dataframe_to_table(conn, "raw", "dim_players", df_players, primary_key="playerId", replace=True)
+                    write_dataframe_to_table(conn, "sprint_dim", "dim_players", df_players, primary_key="playerId", replace=True)
                 else:
                     player_ids = players_df["playerId"].tolist()
                 signons_df = model_sign_ons(player_ids, n_days=365)
-                write_dataframe_to_table(conn, "raw", "fact_signons", signons_df, replace=True)
+                write_dataframe_to_table(conn, "sprint_raw", "event_signons", signons_df, replace=True)
                 country_map = assign_countries(player_ids)
             else:
                 country_map = assign_countries(signons_df["playerId"].unique())
@@ -183,18 +183,18 @@ def main():
 
     if args.entrypoint in ("transactions", "all"):
         if signons_df is None:
-            signons_df = load_table_to_df(conn, "raw", "fact_signons")
+            signons_df = load_table_to_df(conn, "sprint_raw", "event_signons")
             if signons_df is None:
                 print("⚠️ No sign-ons found in DB, regenerating.")
-                players_df = load_table_to_df(conn, "raw", "dim_players")
+                players_df = load_table_to_df(conn, "sprint_dim", "dim_players")
                 if players_df is None or players_df.empty:
                     player_ids = generate_player_ids(DEFAULT_STARTING_PLAYERS)
                     df_players = pd.DataFrame({"playerId": player_ids})
-                    write_dataframe_to_table(conn, "raw", "dim_players", df_players, primary_key="playerId", replace=True)
+                    write_dataframe_to_table(conn, "sprint_dim", "dim_players", df_players, primary_key="playerId", replace=True)
                 else:
                     player_ids = players_df["playerId"].tolist()
                 signons_df = model_sign_ons(player_ids, n_days=365)
-                write_dataframe_to_table(conn, "raw", "fact_signons", signons_df, replace=True)
+                write_dataframe_to_table(conn, "sprint_raw", "event_signons", signons_df, replace=True)
         run_transactions(conn, signons_df)
 
     print("✅ Done!")
