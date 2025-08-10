@@ -31,7 +31,7 @@ seeds:
         tests:
           - not_null
           - dbt_utils.expression_is_true:
-              expression: "purchasePrice > 0"
+              expression: "> 0"
 
       - name: transactionType
         description: "Type of transaction for the product"
