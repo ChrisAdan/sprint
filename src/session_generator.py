@@ -181,7 +181,7 @@ def generate_sessions(
         for session_players in sessions_schedule:
             session_start, session_end = generate_session_times(date)
 
-            players_selected, team_ids, teams = generate_team_structure(session_players)
+            players_selected, _, teams = generate_team_structure(session_players)
             behavior_map, speed_map, durations = assign_behavior_and_speed(players_selected)
 
             player_to_team = {pid: tid for tid, players in teams.items() for pid in players}

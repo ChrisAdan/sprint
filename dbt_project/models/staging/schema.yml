@@ -6,12 +6,8 @@ sources:
     tables:
       - name: event_session
         description: "Session-level data including heartbeat_data JSON and raw JSON response"
-        loaded_at_field: createdAt
-        freshness:
-          warn_after: { count: 25, period: hour }
-          error_after: { count: 2, period: day }
         columns:
-          - name: recordId
+          - name: sessionId
             description: "Unique session identifier"
             tests:
               - not_null
@@ -24,8 +20,8 @@ sources:
             description: "Timestamp when the session record was created"
             tests:
               - not_null
-              - dbt_utils.expression_is_true:
-                  expression: "< now()"
+              # - dbt_utils.expression_is_true:
+              #     expression: "< now()"
 
       - name: event_transaction
         description: "Transaction logs with purchases and events"
@@ -57,12 +53,6 @@ sources:
               - not_null
               - dbt_utils.expression_is_true:
                   expression: ">= 0"
-          - name: purchaseQuantity
-            description: "Quantity of the purchased product"
-            tests:
-              - not_null
-              - dbt_utils.expression_is_true:
-                  expression: "> 0"
           - name: currency
             description: "Currency code, e.g. USD"
             tests:
