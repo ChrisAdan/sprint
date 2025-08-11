@@ -82,7 +82,7 @@ dbt test
 dbt docs generate
 dbt docs serve
 ```
-💡 Notes
+#### 💡 Notes  
 [ ] This setup assumes you have Python and dbt installed and available in your PATH.  
 [ ] All generated data is loaded into the local DuckDB database configured in the project.  
 [ ] You can adjust data generation by specifying different --entrypoint options to main.py.  
