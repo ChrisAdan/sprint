@@ -54,6 +54,37 @@ Close encounters are derived from heartbeat data in dbt using spatial proximity 
 
 ---
 
+## ⚙️ How To Use Locally
+
+Follow these steps to clone the repo, generate synthetic data, and run the full dbt analytics pipeline on your machine:
+
+```bash
+# 1. Clone the repository
+git clone <repo-url>
+cd repo
+
+# 2. Install Python dependencies
+pip install -r requirements.txt
+
+# 3. Generate all synthetic data (players, sessions, transactions, etc.)
+python scripts/main.py --entrypoint all
+
+# 4. Run dbt to build models and tests
+dbt deps
+dbt run
+dbt test
+
+# 5. Generate and serve dbt documentation site
+dbt docs generate
+dbt docs serve
+```
+💡 Notes
+[ ] This setup assumes you have Python and dbt installed and available in your PATH.  
+[ ] All generated data is loaded into the local DuckDB database configured in the project.  
+[ ] You can adjust data generation by specifying different --entrypoint options to main.py.  
+
+To stop serving docs, press Ctrl+C in the terminal running dbt docs serve.
+
 ## 🗂️ Folder Structure
 
 ```bash
