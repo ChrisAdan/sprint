@@ -56,25 +56,29 @@ Close encounters are derived from heartbeat data in dbt using spatial proximity 
 
 ## ⚙️ How To Use Locally
 
-Follow these steps to clone the repo, generate synthetic data, and run the full dbt analytics pipeline on your machine:
+Follow these steps to clone the repo, set up a Python virtual environment, generate synthetic data, and run the full dbt analytics pipeline on your machine:
 
 ```bash
 # 1. Clone the repository
-git clone <repo-url>
+git clone https://github.com/ChrisAdan/sprint.git
 cd repo
 
-# 2. Install Python dependencies
+# 2. Create and activate a Python virtual environment
+python3 -m venv venv
+source venv/bin/activate       # On Windows: venv\Scripts\activate
+
+# 3. Install Python dependencies
 pip install -r requirements.txt
 
-# 3. Generate all synthetic data (players, sessions, transactions, etc.)
+# 4. Generate all synthetic data (players, sessions, transactions, etc.)
 python scripts/main.py --entrypoint all
 
-# 4. Run dbt to build models and tests
+# 5. Run dbt to build models and tests
 dbt deps
 dbt run
 dbt test
 
-# 5. Generate and serve dbt documentation site
+# 6. Generate and serve dbt documentation site
 dbt docs generate
 dbt docs serve
 ```
