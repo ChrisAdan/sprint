@@ -85,7 +85,7 @@ python scripts/main.py --entrypoint sessions
 - event_session
 - event_transaction
 
-  **sprint_stage**
+**sprint_stage**
 - fact_session
 
 
