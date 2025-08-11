@@ -29,13 +29,13 @@ The project focuses on:
 We simulate three primary logging sources reflecting real-time game telemetry:
 
 1. **Session Ends**  
-   PlayerId, SessionId, Timestamp, Country, EventLengthSeconds, Kills, Deaths
+   PlayerId, SessionId, EventDateTime, Country, EventLengthSeconds, Kills, Deaths
 
 2. **In-Game Purchases**  
-   TransactionId, PlayerId, Timestamp, ItemId, Price, Currency
+   TransactionId, PlayerId, EventDateTime, PurchaseItem, PurchasePrice, Currency, IsRecurring, Cycle, TransactionType (Battle Pass, Skins, Emotes)
 
 3. **Player Heartbeats**  
-   PlayerId, Timestamp, TeamId, SessionId, PositionX, PositionY, PositionZ
+   PlayerId, EventDateTime, TeamId, SessionId, PositionX, PositionY, PositionZ
 
 Each player plays at most 1 session per day due to computation constraints. Heartbeats are generated every 30s during active sessions. Purchase behavior varies by player cluster.
 
@@ -83,7 +83,7 @@ sprint/                         # Root project directory
 │   │   │   └── ...
 │
 ├── dbt_project/                 # dbt transformations
-│   ├── seeds/                   # Static reference data
+│   ├── seeds/                   # Static ref data from product_generator.py
 │   │   ├── dim_products.csv
 │   │
 │   ├── models/
