@@ -67,6 +67,9 @@ cd repo
 python3 -m venv venv
 source venv/bin/activate       # On Windows: venv\Scripts\activate
 
+# Install project in editable mode
+pip install -e .
+
 # 3. Install Python dependencies
 pip install -r requirements.txt
 
@@ -82,10 +85,11 @@ dbt test
 dbt docs generate
 dbt docs serve
 ```
+
 💡 Notes
 [ ] This setup assumes you have Python and dbt installed and available in your PATH.  
 [ ] All generated data is loaded into the local DuckDB database configured in the project.  
-[ ] You can adjust data generation by specifying different --entrypoint options to main.py.  
+[ ] You can adjust data generation by specifying different --entrypoint options to main.py.
 
 To stop serving docs, press Ctrl+C in the terminal running dbt docs serve.
 
