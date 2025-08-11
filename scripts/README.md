@@ -77,12 +77,18 @@ python scripts/main.py --entrypoint sessions
 **sprint_dim**
 
 - dim_players
+- dim_products
 
 **sprint_raw**
 
 - event_signons
 - event_session
 - event_transaction
+
+  **sprint_stage**
+- fact_session
+
+
 
 ---
 
