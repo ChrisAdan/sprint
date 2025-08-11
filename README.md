@@ -67,21 +67,22 @@ cd repo
 python3 -m venv venv
 source venv/bin/activate       # On Windows: venv\Scripts\activate
 
-# Install project in editable mode
-pip install -e .
-
 # 3. Install Python dependencies
 pip install -r requirements.txt
 
-# 4. Generate all synthetic data (players, sessions, transactions, etc.)
+# 4. Install project in editable mode
+pip install -e .
+
+# 5. Generate all synthetic data (players, sessions, transactions, etc.)
 python scripts/main.py --entrypoint all
 
-# 5. Run dbt to build models and tests
+# 6. Run dbt to build models and tests
 dbt deps
+dbt compile
 dbt run
 dbt test
 
-# 6. Generate and serve dbt documentation site
+# 7. Generate and serve dbt documentation site
 dbt docs generate
 dbt docs serve
 ```
