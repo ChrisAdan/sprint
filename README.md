@@ -15,13 +15,12 @@ The project focuses on:
 
 ## 📦 Pipeline Overview
 
-| Stage           | Tooling                   | Description                                                                 |
-| --------------- | ------------------------- | --------------------------------------------------------------------------- |
-| Data Gen        | `generate_sample_data.py` | Creates realistic JSON/CSV event files for Sessions, Purchases, Heartbeats  |
-| Ingest & Load   | Python + DuckDB           | Loads mock event data into staging tables (raw format)                      |
-| Transform       | dbt                       | Builds STG & DIM/FACT models with game-aware logic (e.g., close encounters) |
-| Analysis        | SQL + dbt                 | Answers key gameplay/business questions via performant queries              |
-| Dashboard (opt) | Streamlit                 | Lightweight app to visualize insights locally                               |
+| Stage         | Tooling         | Description                                                                                                                           |
+| ------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Data Gen      | `main.py`       | Orchestrates all generators (sessions, transactions, products, heartbeats) to produce realistic JSON/CSV event data                   |
+| Ingest & Load | Python + DuckDB | Loads generated raw event data into `sprint_raw` tables in DuckDB                                                                     |
+| Transform     | dbt             | Transforms raw data through `sprint_stage` and `sprint_dim` into `sprint_mart` models using game-aware logic (e.g., close encounters) |
+| Analysis      | SQL + Jupyter   | Runs performant analytical queries and produces insights from `sprint_mart` tables                                                    |
 
 ---
 
@@ -30,15 +29,15 @@ The project focuses on:
 We simulate three primary logging sources reflecting real-time game telemetry:
 
 1. **Session Ends**  
-   PlayerId, SessionId, Timestamp, Country, EventLength, Kills, Deaths
+   PlayerId, SessionId, Timestamp, Country, EventLengthSeconds, Kills, Deaths
 
 2. **In-Game Purchases**  
-   PlayerId, Timestamp, Item, Price
+   TransactionId, PlayerId, Timestamp, ItemId, Price, Currency
 
 3. **Player Heartbeats**  
-   PlayerId, Timestamp, TeamId, SessionId, PositionX/Y/Z
+   PlayerId, Timestamp, TeamId, SessionId, PositionX, PositionY, PositionZ
 
-Each player plays 0–10 sessions/day probabilistically. Heartbeats are generated every 30s during active sessions. Purchase behavior varies by player cluster.
+Each player plays at most 1 session per day due to computation constraints. Heartbeats are generated every 30s during active sessions. Purchase behavior varies by player cluster.
 
 ---
 
@@ -61,16 +60,19 @@ Close encounters are derived from heartbeat data in dbt using spatial proximity 
 sprint/                         # Root project directory
 │
 ├── data/                       # Output folder for synthetic JSON/CSV/Parquet data
+│   ├── sessions/                # JSON dumps for player sessions
 │
 ├── scripts/                    # CLI entry points for the pipeline
-│   ├── generate_sample_data.py  # Orchestrates session, heartbeat, and summary generation
-│   ├── ingest_to_duckdb.py      # Loads raw JSON/CSV data into DuckDB
+│   ├── main.py                  # Orchestrates all data generation and ingestion
 │
 ├── src/                        # Core simulation logic
 │   ├── __init__.py
 │   ├── session_generator.py     # Creates player sessions and metadata
 │   ├── heartbeat_generator.py   # Simulates player movement heartbeats in 3D space
+│   ├── transaction_generator.py # Simulates in-game purchase transactions
+│   ├── loader.py                # Loads generated data into DuckDB
 │   ├── summarizer.py            # Aggregates kills, deaths, session stats
+│   ├── utils.py                 # Shared helper functions
 │   ├── movement/                # Movement function implementations
 │   │   ├── __init__.py
 │   │   ├── step/
@@ -82,29 +84,46 @@ sprint/                         # Root project directory
 │
 ├── dbt_project/                 # dbt transformations
 │   ├── seeds/                   # Static reference data
-│   │   ├── dim_products.csv      # Example: product lookup table
-│   │   └── ...                   # Additional seed CSVs
+│   │   ├── dim_products.csv
 │   │
 │   ├── models/
-│   │   ├── staging/              # Clean and prepare raw data
-│   │   │   ├── stg_heartbeats.sql # Parse heartbeat_data JSON into tabular format
-│   │   │   ├── stg_sessions.sql   # Clean session metadata
-│   │   │   ├── stg_transactions.sql # Clean transaction data
-│   │   │   └── ...
+│   │   ├── staging/
+│   │   │   ├── event_heartbeat.sql
+│   │   │   ├── stage_centroids.sql
+│   │   │   ├── stage_encounters.sql
+│   │   │   ├── schema.yml
 │   │
-│   │   ├── marts/                # Final analytics tables
-│   │   │   ├── fact_heartbeats.sql # (Optional) Refined heartbeat facts
-│   │   │   └── ...
-│   │
-│   ├── dbt_project.yml           # dbt project configuration
+│   │   ├── marts/
+│   │   │   ├── country_monthly_playtime.sql
+│   │   │   ├── country_weekly_revenue.sql
+│   │   │   ├── encounter_summary_daily.sql
+│   │   │   ├── player_activity_daily.sql
+│   │   │   ├── player_consecutive_days_monthly.sql
+│   │   │   ├── player_stats_lifetime.sql
+│   │   │   ├── session_close_encounters_daily.sql
+│   │   │   ├── schema.yml
 │
-├── queries/                      # Standalone SQL scripts for the 7 business questions
+│   ├── macros/
+│   │   ├── compute_encounters.sql
 │
-├── streamlit_app.py               # Optional interactive dashboard
+│   ├── tests/
+│   │   ├── no_zero_duration_encounters.sql
+│
+├── tests/                       # Pytest unit tests
+│   ├── test_db.py
+│   ├── test_products.py
+│   ├── test_sessions.py
+│   ├── test_transactions.py
+│
+├── notebooks/                   # Analysis notebooks
+│   ├── analysis.ipynb
+│   ├── player_paths.ipynb
+│
+├── queries/                     # Standalone SQL scripts for the 7 business questions
+│
+├── requirements.txt
 ├── README.md
 └── LICENSE
-
-
 ```
 
 ---
@@ -115,46 +134,52 @@ sprint/                         # Root project directory
 ![DuckDB](https://img.shields.io/badge/DuckDB-%231C2D3F?logo=DuckDB&logoColor=white&style=flat-square) |
 ![dbt](https://img.shields.io/badge/dbt-%23FF694B?logo=dbt&logoColor=white&style=flat-square)
 
-### STG Layer
+**Schema & Table Catalog**
 
-- `stg_sessions`
-- `stg_purchases`
-- `stg_heartbeats`
+**sprint_dim**
 
-### DIM / FACT Models
+- dim_players
+- dim_products
 
-- `dim_players` — Player profile and derived attributes
-- `fact_sessions` — Normalized session-level stats
-- `fact_encounters` — Derived from heartbeats using Euclidean distance + time logic
-- `fact_purchases` — Aggregated in-game purchases
-- `date_spine` — Helps with time-aware rollups and streak detection
+**sprint_mart**
+
+- country_monthly_playtime
+- country_weekly_revenue
+- encounter_summary_daily
+- player_activity_daily
+- player_consecutive_days_monthly
+- player_stats_lifetime
+- session_close_encounters_daily
+
+**sprint_raw**
+
+- event_session
+- event_signons
+- event_transaction
+
+**sprint_stage**
+
+- event_heartbeat
+- fact_session
+- stage_centroids
+- stage_encounters
 
 ---
 
-## 📊 Optional: Streamlit Dashboard
+## 📊 Analysis
 
-An optional `streamlit_app.py` renders graphs and stats:
-
-- Playtime and K/D ratios
-- Weekly player activity heatmaps
-- Revenue per region
-- Encounter metrics per session
-
-This is not required per the brief but demonstrates the data pipeline's usability for analysts or PMs.
+Analysis is performed in Jupyter notebooks and SQL, targeting `sprint_mart` tables to answer gameplay and business questions with performant queries.
 
 ---
 
 ## 🚀 Coming Up Next
 
-- [ ] Implement `generate_sample_data.py` with realism (players, country dist, team composition)
-- [ ] Define table creation & load in `ingest_to_duckdb.py`
-- [ ] Write dbt models (starting with STG → DIM → FACT)
-- [ ] Derive close encounters in `fact_encounters`
-- [ ] Write SQL answers for all 7 questions
-- [ ] Estimate table growth in documentation
-- [ ] (Optional) Add Streamlit dashboard
-- [ ] (Optional) Improved progress tracking during synthetic data generation
-- [ ] (Polishing) Model growth rate to counteract decay curve
+- [x] End-to-end pipeline: data generation → ingestion → transformation → marts
+- [x] dbt models for encounters, centroids, and session facts
+- [x] Analytical queries for business/gameplay metrics
+- [ ] Better player generation — modeling churn, retention, and realistic growth
+- [ ] Player profiling — generate realistic player metadata with Faker
+- [ ] Machine learning — predictive analytics (random forest, logistic regression, XGBoost) on player purchase behavior to identify targetable sales segments
 
 ## 📣 Stay Connected
 
