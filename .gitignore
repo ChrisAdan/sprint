@@ -1,0 +1,9 @@
+docs/compiled/
+docs/run/
+*.msgpack
+*.gpickle
+.venv/
+data/
+dbt_project/
+logs/
+src/
