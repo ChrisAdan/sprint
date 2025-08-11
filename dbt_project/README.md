@@ -1,5 +1,7 @@
 # Sprint dbt Project
 
+![Image of dbt lineage](./dbt_lineage.png)
+
 ## 🗂️ Overview
 
 This folder contains all **dbt models**, seeds, macros, and tests for the Sprint analytics pipeline.  
