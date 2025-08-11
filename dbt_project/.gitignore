@@ -1,4 +1,10 @@
 
-target/
+# Ignore everything in target except its contents for docs publishing
+target/*
+!target/index.html
+!target/catalog.json
+!target/manifest.json
+!target/run_results.json
+!target/assets/
 dbt_packages/
 logs/
