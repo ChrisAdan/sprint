@@ -1,15 +1,18 @@
 -- tests/revenue_consistency_weekly.sql
 with mart as (
-    select country, week_start, sum(weekly_revenue) as mart_revenue
+    select country, year_week, round(sum(total_revenue), 2) as mart_revenue
     from {{ ref('country_weekly_revenue') }}
-    group by country, week_start
+    group by country, year_week
 ),
 raw as (
-    select country, date_trunc('week', event_datetime::timestamp) as week_start, sum(purchase_price) as raw_revenue
-    from {{ 'sprint_raw', 'event_transaction' }}
-    group by country, week_start
+    select p.country, date_trunc('week', t.eventDateTime::timestamp) as year_week,
+    round(sum(t.purchasePrice), 2) as raw_revenue
+    from {{ source('sprint_raw', 'event_transaction') }} t
+    left join {{ source('sprint_dim', 'dim_players') }} p
+    on t.playerId = p.playerId
+    group by country, year_week
 )
-select mart.country, mart.week_start, mart_revenue, raw_revenue
+select mart.country, mart.year_week, mart_revenue, raw_revenue
 from mart
-join raw using (country, week_start)
+join raw using (country, year_week)
 where abs(mart_revenue - raw_revenue) > 0.01
