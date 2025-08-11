@@ -113,10 +113,10 @@ This GitHub Pages site is automatically updated from the `gh-pages` branch conta
 sprint/                         # Root project directory
 │
 ├── data/                       # Output folder for synthetic JSON/CSV/Parquet data
-│   ├── sessions/                # JSON dumps for player sessions
+│   └── sessions/                # JSON dumps for player sessions
 │
 ├── scripts/                    # CLI entry points for the pipeline
-│   ├── main.py                  # Orchestrates all data generation and ingestion
+│   └── main.py                  # Orchestrates all data generation and ingestion
 │
 ├── src/                        # Core simulation logic
 │   ├── __init__.py
@@ -128,23 +128,23 @@ sprint/                         # Root project directory
 │   ├── utils.py                 # Shared helper functions
 │   ├── movement/                # Movement function implementations
 │   │   ├── __init__.py
-│   │   ├── step/
-│   │   │   ├── lorentzian.py
-│   │   │   ├── bezier.py
-│   │   │   ├── lissajous.py
-│   │   │   ├── perlin.py
-│   │   │   └── ...
+│   │   └── step/
+│   │       ├── lorentzian.py
+│   │       ├── bezier.py
+│   │       ├── lissajous.py
+│   │       ├── perlin.py
+│   │       └── ...
 │
 ├── dbt_project/                 # dbt transformations
 │   ├── seeds/                   # Static ref data from product_generator.py
-│   │   ├── dim_products.csv
+│   │   └── dim_products.csv
 │   │
 │   ├── models/
 │   │   ├── staging/
 │   │   │   ├── event_heartbeat.sql
 │   │   │   ├── stage_centroids.sql
 │   │   │   ├── stage_encounters.sql
-│   │   │   ├── schema.yml
+│   │   │   └── schema.yml
 │   │
 │   │   ├── marts/
 │   │   │   ├── country_monthly_playtime.sql
@@ -154,23 +154,28 @@ sprint/                         # Root project directory
 │   │   │   ├── player_consecutive_days_monthly.sql
 │   │   │   ├── player_stats_lifetime.sql
 │   │   │   ├── session_close_encounters_daily.sql
-│   │   │   ├── schema.yml
+│   │   │   └── schema.yml
 │
 │   ├── macros/
-│   │   ├── compute_encounters.sql
+│   │   └── compute_encounters.sql
 │
 │   ├── tests/
 │   │   ├── no_zero_duration_encounters.sql
+│   │   ├── country_referential_integrity.sql
+│   │   ├── non_negative_playtime.sql
+│   │   ├── revenue_consistency_weekly.sql
+│   │   ├── test_activity_matches_heartbeats.sql
+│   │   └── test_consecutive_days_within_month.sql
 │
 ├── tests/                       # Pytest unit tests
 │   ├── test_db.py
 │   ├── test_products.py
 │   ├── test_sessions.py
-│   ├── test_transactions.py
+│   └── test_transactions.py
 │
 ├── notebooks/                   # Analysis notebooks
 │   ├── analysis.ipynb
-│   ├── player_paths.ipynb
+│   └── player_paths.ipynb
 │
 ├── queries/                     # Standalone SQL scripts for the 7 business questions
 │
